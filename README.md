@@ -106,3 +106,121 @@ Community Insights: Analyzing social media trends with Natural Language API prov
 Multi-Language Support: The use of Googletrans for multi-language support ensured that the platform could cater to a global audience, making it more inclusive.
 This project demonstrated the transformative potential of AI in enhancing the sports viewing experience, providing fans with a richer, more interactive, and personalized engagement with MLB™ games. The use of cutting-edge AI tools from Google Cloud, combined with diverse data sources, paved the way for innovative solutions that set a new standard for fan engagement.
 
+from flask import Flask, render_template, request, jsonify
+from transformers import pipeline
+from googletrans import Translator
+from cryptography.fernet import Fernet
+import os
+
+app = Flask(__name__)
+
+# Load the pre-trained model
+chatbot_pipeline = pipeline('conversational')
+
+# Initialize the translator
+translator = Translator()
+
+# Generate a key for encryption
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/chatbot', methods=['POST'])
+def chatbot():
+    user_input = request.form['user_input']
+    
+    # Translate user input to English
+    translated_input = translator.translate(user_input, dest='en').text
+    
+    # Generate AI response
+    response = chatbot_pipeline(translated_input)[0]['generated_text']
+    
+    # Translate response back to user's language
+    translated_response = translator.translate(response, dest=request.form['language']).text
+    
+    # Encrypt the response
+    encrypted_response = cipher_suite.encrypt(translated_response.encode())
+    
+    return jsonify({'response': encrypted_response.decode()})
+
+@app.route('/personalized_plan', methods=['POST'])
+def personalized_plan():
+    user_data = request.form
+    plan = generate_personalized_plan(user_data)
+    
+    # Encrypt the plan
+    encrypted_plan = cipher_suite.encrypt(plan.encode())
+    
+    return jsonify({'plan': encrypted_plan.decode()})
+
+@app.route('/resources', methods=['GET'])
+def resources():
+    mental_health_resources = get_mental_health_resources()
+    
+    # Encrypt the resources
+    encrypted_resources = cipher_suite.encrypt(mental_health_resources.encode())
+    
+    return jsonify({'resources': encrypted_resources.decode()})
+
+def generate_personalized_plan(user_data):
+    # AI logic to create personalized mental health plan
+    return "This is a personalized mental health plan based on your data."
+
+def get_mental_health_resources():
+    # Return a list of mental health resources
+    return "Resource 1, Resource 2, Resource 3"
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Ph.AI</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Dr. Ph.AI</h1>
+        <p class="lead">Your AI-driven mental health support platform, accessible anytime, anywhere.</p>
+        
+        <div class="mt-4">
+            <h2>Chatbot</h2>
+            <form id="chatbot-form">
+                <div class="form-group">
+                    <label for="user_input">Your Message:</label>
+                    <input type="text" class="form-control" id="user_input" name="user_input">
+                </div>
+                <div class="form-group">
+                    <label for="language">Language:</label>
+                    <select class="form-control" id="language" name="language">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <!-- Add more languages as needed -->
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+            <div class="mt-3" id="chatbot-response"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script>
+        $('#chatbot-form').submit(function(event) {
+            event.preventDefault();
+            var formData = $(this).serialize();
+            $.post('/chatbot', formData, function(data) {
+                $('#chatbot-response').text(data.response);
+            });
+        });
+    </script>
+</body>
+</html>
